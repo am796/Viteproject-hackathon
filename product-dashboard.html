@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Product Management - Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <h2>Product Management</h2>
+      </div>
+      <div class="controls">
+        <button id="back">Back</button>
+      </div>
+    </header>
+
+    <section class="container">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Products</h3>
+          <div class="controls">
+            <form id="addForm" style="display:flex;gap:8px;align-items:center">
+              <input id="sku" placeholder="SKU" required style="padding:8px;border-radius:8px;border:1px solid #e6eefc" />
+              <input id="pname" placeholder="Name" required style="padding:8px;border-radius:8px;border:1px solid #e6eefc" />
+              <input id="stock" placeholder="Stock" type="number" style="width:80px;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
+              <input id="price" placeholder="Price" type="number" style="width:110px;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
+              <button type="submit">Add</button>
+            </form>
+          </div>
+        </div>
+        <div id="productsWrap"></div>
+      </div>
+    </section>
+
+    <script>
+      // Simple admin CRUD UI. Requires JWT in localStorage and admin role.
+      const token = localStorage.getItem('token');
+      const inrFmt = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+      if (!token) { window.location.href = '/'; }
+
+      function parseRole(t){ try { return JSON.parse(atob(t.split('.')[1])).role } catch(e){ return null } }
+      const role = parseRole(token);
+      if (role !== 'admin') {
+        document.body.innerHTML = '<div style="max-width:700px;margin:80px auto;padding:24px;background:#fff;border-radius:10px;text-align:center;">Access denied. Admins only.<br/><a href="/dashboard.html">Back to dashboard</a></div>';
+        throw new Error('Not admin');
+      }
+
+      const authFetch = (url, opts={}) => fetch(url, { ...opts, headers: { ...(opts.headers||{}), Authorization: 'Bearer '+token, 'Content-Type':'application/json' } });
+
+      document.getElementById('back').addEventListener('click', ()=> window.location.href='/dashboard.html');
+
+      async function loadProducts(){
+        const wrap = document.getElementById('productsWrap');
+        wrap.innerHTML = '<div class="muted">Loading...</div>';
+        try{
+          const res = await authFetch('/api/products');
+          if (!res.ok) { wrap.innerHTML = '<div class="muted">Failed to load products</div>'; return; }
+          const j = await res.json();
+          if (!j.products || j.products.length===0) { wrap.innerHTML = '<div class="muted">No products found</div>'; return; }
+          const table = document.createElement('table');
+          table.innerHTML = '<thead><tr><th>SKU</th><th>Name</th><th>Stock</th><th>Price</th><th></th></tr></thead>';
+          const tb = document.createElement('tbody');
+          j.products.forEach(p=>{
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${escapeHtml(p.sku)}</td><td>${escapeHtml(p.name)}</td><td>${p.stock}</td><td>${inrFmt.format(p.price)}</td><td><button data-id="${p.id}" class="edit">Edit</button> <button data-id="${p.id}" class="del">Delete</button></td>`;
+            tb.appendChild(tr);
+          });
+          table.appendChild(tb);
+          wrap.innerHTML = '';
+          wrap.appendChild(table);
+          attachActions();
+        } catch(e){ wrap.innerHTML = '<div class="muted">Network error</div>'; }
+      }
+
+      function escapeHtml(s){ return String(s).replace(/[&<>'\"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
+
+      function attachActions(){
+        document.querySelectorAll('button.edit').forEach(b=>b.addEventListener('click', async (e)=>{
+          const id = e.currentTarget.dataset.id;
+          const name = prompt('New name', '');
+          if (name===null) return;
+          const stock = prompt('Stock', '0'); if (stock===null) return;
+          const price = prompt('Price', '0'); if (price===null) return;
+          const payload = { name, stock: Number(stock), price: Number(price) };
+          const res = await authFetch('/api/products/'+id, { method: 'PUT', body: JSON.stringify(payload) });
+          if (!res.ok) { alert('Update failed'); return; }
+          await loadProducts();
+        }));
+        document.querySelectorAll('button.del').forEach(b=>b.addEventListener('click', async (e)=>{
+          if (!confirm('Delete this product?')) return;
+          const id = e.currentTarget.dataset.id;
+          const res = await authFetch('/api/products/'+id, { method: 'DELETE' });
+          if (!res.ok) { alert('Delete failed'); return; }
+          await loadProducts();
+        }));
+      }
+
+      // Add product form
+      document.getElementById('addForm').addEventListener('submit', async (ev)=>{
+        ev.preventDefault();
+        const sku = document.getElementById('sku').value.trim();
+        const name = document.getElementById('pname').value.trim();
+        const stock = Number(document.getElementById('stock').value||0);
+        const price = Number(document.getElementById('price').value||0);
+        if (!sku || !name) { alert('SKU and name required'); return; }
+        const res = await authFetch('/api/products', { method: 'POST', body: JSON.stringify({ sku, name, stock, price }) });
+        if (!res.ok) { alert('Create failed'); return; }
+        document.getElementById('sku').value=''; document.getElementById('pname').value=''; document.getElementById('stock').value=''; document.getElementById('price').value='';
+        await loadProducts();
+      });
+
+      loadProducts();
+    </script>
+  </body>
+</html>

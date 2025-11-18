@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Login - Vite Dashboard Demo</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="signin">
+    <main class="center-card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <rect width="24" height="24" rx="5" fill="url(#g2)"/>
+          <defs>
+            <linearGradient id="g2" x1="0" x2="1">
+              <stop offset="0" stop-color="#06b6d4"/>
+              <stop offset="1" stop-color="#4f46e5"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div>
+          <h1 style="margin:0">Sign in</h1>
+          <div class="muted small">Access the sales dashboard</div>
+        </div>
+      </div>
+      <form id="loginForm">
+        <label>Email
+          <input id="email" type="email" required autocomplete="username" value="viewer@vite.co.in" />
+        </label>
+        <label>Password
+          <input id="password" type="password" required autocomplete="current-password" value="pass123" />
+        </label>
+        <div class="row" style="margin-top:10px">
+          <button type="submit">Sign in</button>
+          <button type="button" id="toAnalyst">Analyst</button>
+        </div>
+        <p id="msg" class="muted" style="margin-top:8px"></p>
+      </form>
+      <p class="muted small" style="margin-top:12px">Seeded: viewer@vite.co.in / pass123 (also analyst@vite.co.in)</p>
+    </main>
+
+    <script>
+      const form = document.getElementById('loginForm');
+      const msg = document.getElementById('msg');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg.textContent = '';
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        try {
+          const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+          if (!res.ok) {
+            const j = await res.json().catch(()=>({message:'Invalid credentials'}));
+            msg.textContent = j.message || 'Invalid credentials';
+            return;
+          }
+          const j = await res.json();
+          localStorage.setItem('token', j.token);
+          window.location.href = '/dashboard.html';
+        } catch (err) {
+          msg.textContent = 'Network error';
+        }
+      });
+      document.getElementById('toAnalyst').addEventListener('click', ()=>{ document.getElementById('email').value='analyst@vite.co.in'; document.getElementById('password').value='pass123'; });
+    </script>
+  </body>
+</html>

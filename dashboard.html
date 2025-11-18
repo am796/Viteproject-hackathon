@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dashboard - Vite Demo</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="dashboard">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <rect width="24" height="24" rx="6" fill="url(#g)"/>
+          <defs>
+            <linearGradient id="g" x1="0" x2="1">
+              <stop offset="0" stop-color="#4f46e5"/>
+              <stop offset="1" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <h2>Sales Dashboard</h2>
+      </div>
+      <div class="controls">
+        <a id="adminLink" class="badge" href="/product-dashboard.html" style="display:none">Admin</a>
+        <span id="roleBadge" class="badge"></span>
+        <button id="logout">Logout</button>
+      </div>
+    </header>
+
+    <section class="container">
+  <div class="cards" id="cards"></div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Sales Trend</h3>
+          <div class="controls">
+            <label id="filterArea" class="muted" style="display:none">Filter:
+              <select id="categoryFilter"><option value="">All</option></select>
+            </label>
+            <span id="lastUpdated" class="muted small"></span>
+          </div>
+        </div>
+        <div style="height:260px;position:relative">
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Details</h3>
+        <div id="tableWrap" class="table-wrap"></div>
+      </div>
+    </section>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
